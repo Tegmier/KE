@@ -12,7 +12,19 @@ import numpy as np
 import tools
 import load
 
-torch.cuda.set_device(1)
+torch.cuda.set_device(0)
+# if torch.cuda.is_available():
+#     print("CUDA is available. Number of devices:", torch.cuda.device_count())
+    
+#     # 列出每一个 CUDA 设备的信息
+#     for i in range(torch.cuda.device_count()):
+#         print(f"Device {i}: {torch.cuda.get_device_name(i)}")
+#         print(f"  - Total Memory: {torch.cuda.get_device_properties(i).total_memory / 1024 ** 3:.2f} GB")
+#         print(f"  - Compute Capability: {torch.cuda.get_device_properties(i).major}.{torch.cuda.get_device_properties(i).minor}")
+# else:
+#     print("CUDA is not available.")
+print(torch.cuda.current_device())
+
 
 nh1 = 300
 nh2 = 300
