@@ -3,32 +3,20 @@ import torch.optim as optim
 import torch.nn.functional as F
 import torch.nn as nn
 from torch.autograd import Variable
-
 import os
 import time
 import random
 import numpy as np
-
 import tools
 import load
 
 torch.cuda.set_device(0)
-# if torch.cuda.is_available():
-#     print("CUDA is available. Number of devices:", torch.cuda.device_count())
-    
-#     # 列出每一个 CUDA 设备的信息
-#     for i in range(torch.cuda.device_count()):
-#         print(f"Device {i}: {torch.cuda.get_device_name(i)}")
-#         print(f"  - Total Memory: {torch.cuda.get_device_properties(i).total_memory / 1024 ** 3:.2f} GB")
-#         print(f"  - Compute Capability: {torch.cuda.get_device_properties(i).major}.{torch.cuda.get_device_properties(i).minor}")
-# else:
-#     print("CUDA is not available.")
 print(torch.cuda.current_device())
 
 
 nh1 = 300
 nh2 = 300
-win = 3
+win = 5
 emb_dimension = 300
 lr = 0.1
 lr_decay = 0.5
@@ -50,13 +38,23 @@ def adjust_learning_rate(optimizer, epoch):
 class Model(nn.Module):
     def __init__(self, vocab_size, ny, nz, win_size=win, embedding_size=emb_dimension, hidden_size1=nh1, hidden_size2=nh2, batch_size=batch_size, model_cell='rnn'):
         super().__init__()
+
+        # 定义batch大小
         self.batch_size = batch_size
+
+        # 定义两个隐层大小，其中nh1为300，nh2为300
         self.hidden_size1 = hidden_size1
         self.hidden_size2 = hidden_size2
+
+        # 窗口大小定义
         self.win_size = win_size
+
+        # 创建一个嵌入层，用来存储embeddings和单词
         self.embedding = nn.Embedding(vocab_size, embedding_size)
         self.model_cell = model_cell
+
         if model_cell == 'rnn':
+            # 创建两个隐藏层的神经单元，第一个隐藏层的输入大小等于每个单词的embedding长度乘窗口长度，第二个隐藏层的输入大小等于第一层神经元的数量
             self.single_cell1 = nn.RNNCell(input_size=embedding_size * win_size, hidden_size=hidden_size1)
             self.single_cell2 = nn.RNNCell(input_size=hidden_size1, hidden_size=hidden_size2)
         elif model_cell == 'gru':
@@ -64,6 +62,7 @@ class Model(nn.Module):
             self.single_cell2 = nn.GRUCell(input_size=hidden_size1, hidden_size=hidden_size2)
         else:
             raise 'model_cell error!'
+        # 
         self.fc1 = nn.Linear(hidden_size1, ny)
         self.fc2 = nn.Linear(hidden_size2, nz)
 
@@ -71,15 +70,20 @@ class Model(nn.Module):
         batch_size, seq_size, win = x.shape
 
         x = x.permute((1, 0, 2))
+
         # idx -> embedding
+        # 进来的x是id？
         x = self.embedding(x)
         # embedding in win -> embedding
         x = x.reshape(seq_size, batch_size, -1)
         x = F.relu(x)
 
         # init h
-        h1 = Variable(torch.zeros(batch_size, self.hidden_size1)).cuda()
-        h2 = Variable(torch.zeros(batch_size, self.hidden_size2)).cuda()
+        # h1 = Variable(torch.zeros(batch_size, self.hidden_size1)).cuda()
+        # h2 = Variable(torch.zeros(batch_size, self.hidden_size2)).cuda()
+
+        h1 = torch.zeros(batch_size, self.hidden_size1, device='cuda')
+        h2 = torch.zeros(batch_size, self.hidden_size2, device='cuda')
 
         # out1 -> y, out2 -> z
         out1, out2 = [], []
@@ -167,7 +171,6 @@ def train_model(model, criterion, optimizer, train_set):
         if not os.path.exists(checkpoint_dir):
             os.mkdir(checkpoint_dir)
         checkpoint_prefix = os.path.join(checkpoint_dir, 'model')
-        
     return model
 
 def eval_model(model, valid_set):
