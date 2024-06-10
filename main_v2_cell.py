@@ -79,16 +79,21 @@ class Model(nn.Module):
         x = F.relu(x)
 
         # init h
+
         # h1 = Variable(torch.zeros(batch_size, self.hidden_size1)).cuda()
         # h2 = Variable(torch.zeros(batch_size, self.hidden_size2)).cuda()
-
         h1 = torch.zeros(batch_size, self.hidden_size1, device='cuda')
         h2 = torch.zeros(batch_size, self.hidden_size2, device='cuda')
 
+        print("seq_size" + str(seq_size))
         # out1 -> y, out2 -> z
         out1, out2 = [], []
         for i in range(seq_size):
             # 按顺序放进去，因此seq_size是第一维
+            # self.single_cell1是一个RNNcell，它接受两个输入
+
+            # print(x[i].shape)
+
             h1 = self.single_cell1(x[i], h1)
             h2 = self.single_cell2(h1, h2)
             # seq_size, batch_size, hidden_size
@@ -146,6 +151,9 @@ def train_model(model, criterion, optimizer, train_set):
         data_size = 0
         t_start = time.time()
         for i, (lex, y, z) in enumerate(trainloader):
+            
+            print(lex.shape)
+            
             lex = lex.cuda()
             y = y.cuda()
             z = z.cuda()

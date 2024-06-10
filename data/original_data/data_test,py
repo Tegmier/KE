@@ -1,0 +1,56 @@
+import numpy as np
+import re
+import pickle
+from collections import Counter
+
+# def getlist(filename):
+#     # split dataset into sentence and tag
+#     count = 0
+#     with open(filename, 'r', encoding='utf-8') as f:
+#         datalist, taglist = [], []
+#         for line in f:
+#             count +=1
+#             if count >= 100 and count < 160:
+#                 print(line.split('\t')[0])
+#                 print(line.split('\t')[1])    
+#     return datalist[:1000], taglist[:1000]
+
+# getlist(r'data/original_data/trnTweet')
+
+filename = r'data/original_data/trnTweet'
+with open(filename, 'r', encoding='utf-8') as f:
+    tagset = set()
+    for line in f:
+        tagset.add(line.split('\t')[1])
+
+print(len(tagset))
+
+
+import spacy
+from collections import Counter
+
+load  = False
+
+# 加载spaCy的英文模型
+spacy_model = spacy.load("en_core_web_sm")
+if load is False:
+    # 处理集合中的每个词
+    pos_counts = Counter()
+    for word in tagset:
+        doc = spacy_model(word)
+        print(word)
+        print("1" + str(doc[0]))
+        print("2" + str(doc[1]))
+        print("3" + str(doc[2]))
+        for token in doc:
+            pos_counts[token.pos_] += 1
+    with open(r'data/original_data/pos.pkl', 'wb') as f:
+        pickle.dump(pos_counts, f)
+else:
+    with open(r'data/original_data/pos.pkl', 'rb') as f:
+        pos_counts = pickle.load(f)
+
+# 打印每个词性的出现次数
+print("词性统计:")
+for pos, count in pos_counts.items():
+    print(f"{pos}: {count}")
