@@ -153,7 +153,7 @@ def train_model(model, criterion, optimizer, train_set):
         for i, (lex, y, z) in enumerate(trainloader):
             
             print(lex.shape)
-            
+
             lex = lex.cuda()
             y = y.cuda()
             z = z.cuda()
@@ -241,6 +241,9 @@ if __name__ == '__main__':
     idx2word = dict((k, v) for v, k in dic['words2idx'].items())
 
     train_lex, train_y, train_z = train_set
+
+    print(len(train_lex))
+    print(train_lex[0])
 
     tr = int(len(train_lex)*0.9)
     valid_lex, valid_y, valid_z = train_lex[tr:], train_y[tr:], train_z[tr:]

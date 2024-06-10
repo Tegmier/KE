@@ -25,12 +25,14 @@ def get_dict(filenames):
     words = []
     for sentence in sentence_list:
         word_list = sentence.split()
+        # 把列表的内容塞到屁股后边
         words.extend(word_list)
 
     word_counts = Counter(words)
-    # 空出0作为padding的idx
+    # 空出0作为padding的idx，这句话很重要，one-hot编码是从0开始的
     words2idx = {word[0]: i+1 for i, word in enumerate(word_counts.most_common())}
     labels2idx = {'O': 0, 'B': 1, 'I': 2, 'E': 3, 'S': 4}
+    # 两个字典 word2idx label2idx
     dicts = {'words2idx': words2idx, 'labels2idx': labels2idx}
 
     return dicts, trn_data, test_data
@@ -63,6 +65,8 @@ def get_train_test_dicts(filenames):
             word_list = s.split()
             t_list = tag.split()
             # word -> idx for word in word_list
+
+            # one-hot embedding
             emb = [words2idx[x] for x in word_list]
             # emb = map(lambda x: words2idx[x], word_list)
 
@@ -81,7 +85,7 @@ def get_train_test_dicts(filenames):
                 continue
 
             lex.append(emb)
-
+            
             labels_y = [0]*len(word_list)
             for i in range(len(t_list)):
                 labels_y[begin+i] = 1
