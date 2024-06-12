@@ -11,8 +11,7 @@ import tools
 import load
 
 torch.cuda.set_device(0)
-print(torch.cuda.current_device())
-
+print("Current device is : " + str(torch.cuda.current_device()))
 
 nh1 = 300
 nh2 = 300
@@ -115,6 +114,7 @@ def data_pad(data_set, padding_word=0, forced_sequence_length=None):
     if forced_sequence_length is None:
         sequence_length = max(len(x['lex']) for x in data_set)
     else:
+        # 这个函数的存在是因为可能要强制要求长度
         sequence_length = forced_sequence_length
     padded_lex, padded_y, padded_z = [], [], []
     for data in data_set:
@@ -130,17 +130,33 @@ def data_pad(data_set, padding_word=0, forced_sequence_length=None):
         padded_lex.append(lex)
         padded_y.append(y)
         padded_z.append(z)
+
     padded_lex = tools.contextwin_2(padded_lex, win)
     padded_lex = torch.tensor(padded_lex, dtype=torch.int64)
     padded_y = torch.tensor(padded_y, dtype=torch.int64)
     padded_z = torch.tensor(padded_z, dtype=torch.int64)
+
+    print(padded_lex[0].shape)
+    print(padded_y[0].shape)
+    print(len(padded_z))
+
     return padded_lex, padded_y, padded_z
 
 def iterData(data, batchsize):
     bucket = random.sample(data, len(data))
+    # 测试一下lex和y和z的长度是否一致，结果发现一致
+    # count = 0
+    # for data_piece in bucket:
+    #     lexlength = len(data_piece['lex'])
+    #     ylength = len(data_piece['y'])
+    #     zlength = len(data_piece['z'])
+    #     if lexlength != ylength or lexlength != zlength or ylength != zlength:
+    #         count +=1
+    # print(count)
     bucket = [bucket[i: i+batchsize] for i in range(0, len(bucket), batchsize)]
     random.shuffle(bucket)
     for batch in bucket:
+        print(batch)
         yield data_pad(batch)
 
 def train_model(model, criterion, optimizer, train_set):
@@ -150,6 +166,7 @@ def train_model(model, criterion, optimizer, train_set):
         train_loss = []
         data_size = 0
         t_start = time.time()
+
         for i, (lex, y, z) in enumerate(trainloader):
             
             print(lex.shape)
@@ -236,23 +253,42 @@ def conlleval(predictions, groundtruth, file):
 
 if __name__ == '__main__':
     train_set, test_set, dic, embedding = load.atisfold()
+
+    # print(len(train_set[0]))
+    # print(len(train_set[1]))
+    # print(len(train_set[2]))
+    # print(type(train_set[0]))
+    # print(len(train_set[1]))
+    # print(len(train_set[2]))
+
         
     idx2label = dict((k, v) for v, k in dic['labels2idx'].items())
     idx2word = dict((k, v) for v, k in dic['words2idx'].items())
 
     train_lex, train_y, train_z = train_set
 
-    print(len(train_lex))
-    print(train_lex[0])
+    # print(len(train_lex))
+    # print(train_lex[0])
 
+    # 90%数据作为训练数据集
     tr = int(len(train_lex)*0.9)
     valid_lex, valid_y, valid_z = train_lex[tr:], train_y[tr:], train_z[tr:]
     train_lex, train_y, train_z = train_lex[:tr], train_y[:tr], train_z[:tr]
     test_lex,  test_y, test_z = test_set
 
+    # print(train_lex)
+    # print(len(train_lex))
+
+    # train_data [字典1，字典2，。。。。。] 其中每个字典{'lex': lex, 'y'：y, 'z'：z}
     train_data = []
     for lex, y, z in zip(train_lex, train_y, train_z):
         train_data.append({'lex': lex, 'y': y, 'z': z})
+
+    # for i, lex, y, z in enumerate(train_data):
+
+
+
+
 
     valid_data = []
     for lex, y, z in zip(valid_lex, valid_y, valid_z):
@@ -262,6 +298,7 @@ if __name__ == '__main__':
     for lex, y, z in zip(test_lex, test_y, test_z):
         test_data.append({'lex': lex, 'y': y, 'z': z})
 
+    #######
     vocab = set(dic['words2idx'].keys())
     vocab_size = len(vocab)
     y_nclasses, z_nclasses = 2, 5
