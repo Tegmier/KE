@@ -10,8 +10,45 @@ import numpy as np
 import tools
 import load
 
-torch.cuda.set_device(0)
-print("Current device is : " + str(torch.cuda.current_device()))
+###################### Tegmier Standard Gpu Checking Processing ######################
+# work_place lab:0 home:1 laptop:2
+work_place = 1
+gpu_setup_ascii_art_start = '''
+__________                    .__                 ___________                   .__                 __________________ ____ ___    _________       __                
+\______   \__ __  ____   ____ |__| ____    ____   \__    ___/___   ____   _____ |__| ___________   /  _____/\______   \    |   \  /   _____/ _____/  |_ __ ________  
+ |       _/  |  \/    \ /    \|  |/    \  / ___\    |    |_/ __ \ / ___\ /     \|  |/ __ \_  __ \ /   \  ___ |     ___/    |   /  \_____  \_/ __ \   __\  |  \____ \ 
+ |    |   \  |  /   |  \   |  \  |   |  \/ /_/  >   |    |\  ___// /_/  >  Y Y  \  \  ___/|  | \/ \    \_\  \|    |   |    |  /   /        \  ___/|  | |  |  /  |_> >
+ |____|_  /____/|___|  /___|  /__|___|  /\___  /    |____| \___  >___  /|__|_|  /__|\___  >__|     \______  /|____|   |______/   /_______  /\___  >__| |____/|   __/ 
+        \/           \/     \/        \//_____/                \/_____/       \/        \/                \/                             \/     \/           |__|    
+'''
+print(gpu_setup_ascii_art_start)
+if work_place == 0:
+    torch.cuda.set_device(0)
+elif work_place == 1:
+    print(torch.cuda.get_device_name(torch.cuda.current_device()))
+    torch.cuda.set_device(0)
+else:
+    torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.cuda.current_device()
+if torch.cuda.is_available() and device != 'cpu':
+    print(f"当前设备: CUDA")
+    print(f"设备名称: {torch.cuda.get_device_name(device)}")
+    print(f"CUDA Capability: {torch.cuda.get_device_capability(device)}")
+    print(f"总内存: {torch.cuda.get_device_properties(device).total_memory / (1024**3):.2f} GB")
+else:
+    print("当前设备: CPU")
+
+gpu_setup_ascii_art_end = '''
+  __________________ ____ ___    _________       __                 ___________           .___      
+ /  _____/\______   \    |   \  /   _____/ _____/  |_ __ ________   \_   _____/ ____    __| _/______
+/   \  ___ |     ___/    |   /  \_____  \_/ __ \   __\  |  \____ \   |    __)_ /    \  / __ |/  ___/
+\    \_\  \|    |   |    |  /   /        \  ___/|  | |  |  /  |_> >  |        \   |  \/ /_/ |\___ \ 
+ \______  /|____|   |______/   /_______  /\___  >__| |____/|   __/  /_______  /___|  /\____ /____  >
+        \/                             \/     \/           |__|             \/     \/      \/    \/ 
+'''
+print(gpu_setup_ascii_art_end)
+###################### Tegmier Standard Gpu Checking Processing END ######################
+
 
 nh1 = 300
 nh2 = 300
@@ -69,6 +106,7 @@ class Model(nn.Module):
         batch_size, seq_size, win = x.shape
 
         x = x.permute((1, 0, 2))
+        print(x.shape)
 
         # idx -> embedding
         # 进来的x是id？
@@ -84,7 +122,7 @@ class Model(nn.Module):
         h1 = torch.zeros(batch_size, self.hidden_size1, device='cuda')
         h2 = torch.zeros(batch_size, self.hidden_size2, device='cuda')
 
-        print("seq_size" + str(seq_size))
+        # print("seq_size" + str(seq_size))
         # out1 -> y, out2 -> z
         out1, out2 = [], []
         for i in range(seq_size):
@@ -136,9 +174,9 @@ def data_pad(data_set, padding_word=0, forced_sequence_length=None):
     padded_y = torch.tensor(padded_y, dtype=torch.int64)
     padded_z = torch.tensor(padded_z, dtype=torch.int64)
 
-    print(padded_lex[0].shape)
-    print(padded_y[0].shape)
-    print(len(padded_z))
+    # print(padded_lex[0].shape)
+    # print(padded_y[0].shape)
+    # print(len(padded_z))
 
     return padded_lex, padded_y, padded_z
 
@@ -156,7 +194,7 @@ def iterData(data, batchsize):
     bucket = [bucket[i: i+batchsize] for i in range(0, len(bucket), batchsize)]
     random.shuffle(bucket)
     for batch in bucket:
-        print(batch)
+        # print(batch)
         yield data_pad(batch)
 
 def train_model(model, criterion, optimizer, train_set):
@@ -169,7 +207,7 @@ def train_model(model, criterion, optimizer, train_set):
 
         for i, (lex, y, z) in enumerate(trainloader):
             
-            print(lex.shape)
+            # print(lex.shape)
 
             lex = lex.cuda()
             y = y.cuda()
@@ -285,10 +323,6 @@ if __name__ == '__main__':
         train_data.append({'lex': lex, 'y': y, 'z': z})
 
     # for i, lex, y, z in enumerate(train_data):
-
-
-
-
 
     valid_data = []
     for lex, y, z in zip(valid_lex, valid_y, valid_z):

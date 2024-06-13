@@ -161,11 +161,15 @@ if __name__ == '__main__':
     vocab = set(dicts['words2idx'].keys())
     print("total num words: {} total num train set: {} total num test set: {}\ndataset created!".format(len(vocab), len(train_set[0]), len(test_set[0])))
 
-    # GoogleNews-vectors-negative300.txt为预先训练的词向量
-    w2v_file = 'original_data/GoogleNews-vectors-negative300.txt'
-    # w2v = load_bin_vec(w2v_file, vocab)
-    w2v = {}
-    print("word2vec loaded")
-    add_unknown_words(w2v, vocab)
-    embedding = get_embedding(w2v, dicts['words2idx'])
-    print("embedding created")
+
+
+    # # GoogleNews-vectors-negative300.txt为预先训练的词向量
+    # w2v_file = 'original_data/GoogleNews-vectors-negative300.txt'
+    # # w2v = load_bin_vec(w2v_file, vocab)
+    # w2v = {}
+    # print("word2vec loaded")
+    # add_unknown_words(w2v, vocab)
+    # embedding = get_embedding(w2v, dicts['words2idx'])
+    # print("embedding created")
+
+    
