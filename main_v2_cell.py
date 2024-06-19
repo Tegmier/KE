@@ -155,6 +155,7 @@ def data_pad(data_set, padding_word=0, forced_sequence_length=None):
         # 这个函数的存在是因为可能要强制要求长度
         sequence_length = forced_sequence_length
     padded_lex, padded_y, padded_z = [], [], []
+    # 这部分代码在做尾部pad
     for data in data_set:
         num = sequence_length - len(data['lex'])
         if num <= 0:
@@ -168,7 +169,8 @@ def data_pad(data_set, padding_word=0, forced_sequence_length=None):
         padded_lex.append(lex)
         padded_y.append(y)
         padded_z.append(z)
-
+    
+    # 在做头尾填充，从而使得整个序列中的每一个单词都能够处于窗口中心的位置
     padded_lex = tools.contextwin_2(padded_lex, win)
     padded_lex = torch.tensor(padded_lex, dtype=torch.int64)
     padded_y = torch.tensor(padded_y, dtype=torch.int64)
@@ -208,14 +210,29 @@ def train_model(model, criterion, optimizer, train_set):
         for i, (lex, y, z) in enumerate(trainloader):
             
             # print(lex.shape)
-
+            # print(lex)
+            # print(lex.shape)
+            
             lex = lex.cuda()
             y = y.cuda()
             z = z.cuda()
             y = y.reshape(-1)
             z = z.reshape(-1)
             y_pred, z_pred = model(lex)
+            # print("TEGMMMMMMMMMMMMMMMMMMMMMMMMMMMM")
+            # print(y_pred)
+            # print(z_pred)
+            # print(y_pred.shape)
+            # print(z_pred.shape)
+
+            # print(y)
+            # print(y.shape)
+            # print(z)
+            # print(z.shape)
+
+            # print(lex.size(0))
             loss = (0.5 * criterion(y_pred, y) + 0.5 * criterion(z_pred, z)) / lex.size(0)
+            # print(loss)
             optimizer.zero_grad()
             loss.backward()
             train_loss.append([float(loss), lex.size(0)])
