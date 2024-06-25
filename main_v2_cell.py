@@ -106,7 +106,7 @@ class Model(nn.Module):
         batch_size, seq_size, win = x.shape
 
         x = x.permute((1, 0, 2))
-        print(x.shape)
+        # print(x.shape)
 
         # idx -> embedding
         # 进来的x是id？
@@ -206,7 +206,6 @@ def train_model(model, criterion, optimizer, train_set):
         train_loss = []
         data_size = 0
         t_start = time.time()
-
         for i, (lex, y, z) in enumerate(trainloader):
             
             # print(lex.shape)
@@ -264,8 +263,17 @@ def eval_model(model, valid_set):
         z = z.cuda()
         y_pred, z_pred = model(lex)
         assert len(lex) == batch_size
-        y_pred = torch.argmax(y_pred, dim=-1).reshape(len(lex), -1)
+        print(y_pred)
+        print(y_pred.shape)
+        # y_pred = torch.argmax(y_pred, dim=-1).reshape(len(lex), -1)
+        y_pred = torch.argmax(y_pred, dim=-1)
+        print(y_pred)
+        print(y_pred.shape)
+        y_pred = y_pred.reshape(len(lex), -1)
+        print(y_pred)
+        print(y_pred.shape)
         z_pred = torch.argmax(z_pred, dim=-1).reshape(len(lex), -1)
+        
         print('{}\n{}\n{} {} {}'.format(z_pred, z, (z_pred == z).sum(), z.shape[1], (z_pred == z).sum() / z.shape[1]))
         acc += (z_pred == z).sum() / z.shape[1]
         data_size += lex.size(0)
