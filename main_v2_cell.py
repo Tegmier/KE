@@ -13,15 +13,6 @@ import load
 ###################### Tegmier Standard Gpu Checking Processing ######################
 # work_place lab:0 home:1 laptop:2
 work_place = 1
-gpu_setup_ascii_art_start = '''
-__________                    .__                 ___________                   .__                 __________________ ____ ___    _________       __                
-\______   \__ __  ____   ____ |__| ____    ____   \__    ___/___   ____   _____ |__| ___________   /  _____/\______   \    |   \  /   _____/ _____/  |_ __ ________  
- |       _/  |  \/    \ /    \|  |/    \  / ___\    |    |_/ __ \ / ___\ /     \|  |/ __ \_  __ \ /   \  ___ |     ___/    |   /  \_____  \_/ __ \   __\  |  \____ \ 
- |    |   \  |  /   |  \   |  \  |   |  \/ /_/  >   |    |\  ___// /_/  >  Y Y  \  \  ___/|  | \/ \    \_\  \|    |   |    |  /   /        \  ___/|  | |  |  /  |_> >
- |____|_  /____/|___|  /___|  /__|___|  /\___  /    |____| \___  >___  /|__|_|  /__|\___  >__|     \______  /|____|   |______/   /_______  /\___  >__| |____/|   __/ 
-        \/           \/     \/        \//_____/                \/_____/       \/        \/                \/                             \/     \/           |__|    
-'''
-print(gpu_setup_ascii_art_start)
 if work_place == 0:
     torch.cuda.set_device(0)
 elif work_place == 1:
@@ -37,16 +28,6 @@ if torch.cuda.is_available() and device != 'cpu':
     print(f"总内存: {torch.cuda.get_device_properties(device).total_memory / (1024**3):.2f} GB")
 else:
     print("当前设备: CPU")
-
-gpu_setup_ascii_art_end = '''
-  __________________ ____ ___    _________       __                 ___________           .___      
- /  _____/\______   \    |   \  /   _____/ _____/  |_ __ ________   \_   _____/ ____    __| _/______
-/   \  ___ |     ___/    |   /  \_____  \_/ __ \   __\  |  \____ \   |    __)_ /    \  / __ |/  ___/
-\    \_\  \|    |   |    |  /   /        \  ___/|  | |  |  /  |_> >  |        \   |  \/ /_/ |\___ \ 
- \______  /|____|   |______/   /_______  /\___  >__| |____/|   __/  /_______  /___|  /\____ /____  >
-        \/                             \/     \/           |__|             \/     \/      \/    \/ 
-'''
-print(gpu_setup_ascii_art_end)
 ###################### Tegmier Standard Gpu Checking Processing END ######################
 
 
@@ -60,7 +41,7 @@ max_grad_norm = 5
 seed = 2021
 checkpoint_dir = './checkpoints'
 nepochs = 15
-batch_size = 1
+batch_size = 5
 display_test_per = 3
 lr_decay_per = 10
 
@@ -207,29 +188,18 @@ def train_model(model, criterion, optimizer, train_set):
         data_size = 0
         t_start = time.time()
         for i, (lex, y, z) in enumerate(trainloader):
-            
-            # print(lex.shape)
-            # print(lex)
-            # print(lex.shape)
-            
+            # lex = (batch, seq, win)
             lex = lex.cuda()
+            # y/z = (batch, seq)
             y = y.cuda()
             z = z.cuda()
+            # y/z = (batch*seq)
             y = y.reshape(-1)
             z = z.reshape(-1)
+
+            # y/z_pred = (batch*seq, y/z_dim)
             y_pred, z_pred = model(lex)
-            # print("TEGMMMMMMMMMMMMMMMMMMMMMMMMMMMM")
-            # print(y_pred)
-            # print(z_pred)
-            # print(y_pred.shape)
-            # print(z_pred.shape)
 
-            # print(y)
-            # print(y.shape)
-            # print(z)
-            # print(z.shape)
-
-            # print(lex.size(0))
             loss = (0.5 * criterion(y_pred, y) + 0.5 * criterion(z_pred, z)) / lex.size(0)
             # print(loss)
             optimizer.zero_grad()
@@ -254,33 +224,42 @@ def train_model(model, criterion, optimizer, train_set):
 
 def eval_model(model, valid_set):
     model.eval()
+    t_start = time.time()
     data_size = 0
     acc = 0
     validloader = iterData(valid_set, batch_size)
+    train_loss = []
+    sentence_based_acc = []
     for i, (lex, y, z) in enumerate(validloader):
         lex = lex.cuda()
+        # y/z = (batch, seq)
         y = y.cuda()
         z = z.cuda()
+        # y/z_pred = (batch*seq, y/z_dim)
         y_pred, z_pred = model(lex)
-        assert len(lex) == batch_size
-        # print(y_pred)
-        # print(y_pred.shape)
+        yforloss = y.reshape(-1)
+        zforloss = z.reshape(-1)
+        loss = (0.5 * criterion(y_pred, yforloss) + 0.5 * criterion(z_pred, zforloss)) / lex.size(0)
+        train_loss.append([float(loss), lex.size(0)])
+        # assert len(lex) == batch_size
+        # y/z_pred = (batch,seq)
         y_pred = torch.argmax(y_pred, dim=-1).reshape(len(lex), -1)
-        # y_pred = torch.argmax(y_pred, dim=-1)
-        # print(y_pred)
-        # print(y_pred.shape)
-        # y_pred = y_pred.reshape(len(lex), -1)
-        # print(y_pred)
-        # print(y_pred.shape)
         z_pred = torch.argmax(z_pred, dim=-1).reshape(len(lex), -1)
-        
-        print('{}\n{}\n{} {} {}'.format(z_pred, z, (z_pred == z).sum(), z.shape[1], (z_pred == z).sum() / z.shape[1]))
+        # print('{}\n{}\n{} {} {}'.format(z_pred, z, (z_pred == z).sum(), z.shape[1], (z_pred == z).sum() / z.shape[1]))
+        rows_equal = torch.all(z_pred == z, dim =1)
+        sentence_based_acc.append([rows_equal.sum().item(), batch_size])
         acc += (z_pred == z).sum() / z.shape[1]
         data_size += lex.size(0)
         # res, good_cnt, all_cnt, p_cnt, r_cnt, pr_cnt = conlleval(z_pred.numpy(), z.numpy(), '')
         # print(res, good_cnt, all_cnt, p_cnt, r_cnt, pr_cnt)
-    assert data_size == len(valid_set)
+    # assert data_size == len(valid_set)
     print('acc: {:.8f}'.format(acc / data_size))
+    train_loss = np.array(train_loss)
+    train_loss = np.sum(train_loss[:, 0] * train_loss[:, 1]) / np.sum(train_loss[:, 1])
+    print('train loss: {:.8f} {}'.format(train_loss, time.time() - t_start))
+    sentence_based_acc = np.array(sentence_based_acc)
+    sentence_acc = np.sum(sentence_based_acc[:,0])/np.sum(sentence_based_acc[:,1])
+    print('Sentence based acc:{:.8f}'.format(sentence_acc))
 
 def getKeyphraseList(l):
     res, now = [], []
@@ -373,3 +352,4 @@ if __name__ == '__main__':
     eval_model(model, random.choices(train_data, k=10))
     eval_model(model, random.choices(valid_data, k=10))
     eval_model(model, random.choices(test_data, k=10))
+    eval_model(model, valid_data)

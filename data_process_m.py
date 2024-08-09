@@ -12,7 +12,7 @@ def getlist(filename):
             line = line.strip()
             datalist.append(line.split('\t')[0])
             taglist.append(line.split('\t')[1])
-    return datalist[:1000], taglist[:1000]
+    return datalist[:10000], taglist[:10000]
 
 
 def get_dict(filenames):
